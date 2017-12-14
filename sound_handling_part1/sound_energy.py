@@ -21,9 +21,6 @@ class handling:
         print "Number frame: ", NUMBER_FRAME
         print "Length: ", len(data)
         print "Time: ", TIME
-        # ax = plt.plot(timeArray, data)
-        # plt.xlabel('time(s)')
-        # plt.ylabel('amplitude')
         return [FRAME_LENGTH, NUMBER_FRAME, data, samplerate]
 
     def sum_of_squares(self, xs):
@@ -41,10 +38,11 @@ class handling:
                 min = 0
                 break
         return min
+
 class mclass:
     def __init__(self,  window):
         self.window = window
-        self.filename = tkFileDialog.askopenfilename(initialdir="/", title="Select file",
+        self.filename = tkFileDialog.askopenfilename(initialdir="/home/dinhky/PycharmProjects/", title="Select sound file",
                                                 filetypes=(("wav files", "*.wav"), ("all files", "*.*")))
 
         if not self.filename:
@@ -52,13 +50,17 @@ class mclass:
             self.window.destroy()
         else:
             self.box = Entry(window)
+            lbl3 = Label(window, text="Energy", width=6, font=("Helvetica", 14))
+            lbl3.pack(side=TOP, anchor=N, pady=5)
             self.fig = Figure(figsize=(6, 6))
-            self.button = Button(window, text="check", command=self.plot)
+            self.button = Button(window, text="CHECK", bg = "#497e1e", fg="white", command=self.plot)
+            self.quit_btn = Button(window, text="QUIT", bg= "red", fg="black", command=self.window.quit)
             self.box.pack()
+            self.quit_btn.pack(side="bottom")
             self.button.pack()
 
     def plot (self):
-        print "====>", self.box.get()
+        print "Nang luong ====>", self.box.get()
         hd = handling()
         FRAME_DURATION = 0.02
         status = 0
@@ -70,8 +72,7 @@ class mclass:
         samplerate = return_value_of_handling[3]
 
         a = self.fig.add_subplot(111)
-        # a.scatter(v,x,color='red')
-        # a.plot(p, range(2 +max(x)),color='blue')
+        a.clear()
         samplerate, data = wavfile.read(self.filename)
         data = data / (2. ** 15)
         timeArray = np.arange(0, len(data), 1)
@@ -107,11 +108,12 @@ class mclass:
             else:
                 status = 0
 
-        a.set_title ("Estimation Grid", fontsize=16)
-        a.set_ylabel("Y", fontsize=14)
-        a.set_xlabel("X", fontsize=14)
+        a.set_title ("Plotting sound", fontsize=16)
+        a.set_ylabel("amplitude", fontsize=14)
+        a.set_xlabel("time(s)", fontsize=14)
         if hasattr(self, 'canvas'):
-            self.canvas.get_tk_widget().pack_forget()
+            # self.canvas.get_tk_widget().pack_forget()
+            self.canvas.get_tk_widget().destroy()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()

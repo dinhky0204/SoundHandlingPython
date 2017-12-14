@@ -29,9 +29,6 @@ class App(Frame):
         # self.contents.grid(row=0, column = 2)
         self.entrythingy["textvariable"] = self.contents
 
-        # and here we get a callback when the user hits return.
-        # we will have the program print out the value of the
-        # application variable when the user hits return
         self.entrythingy.bind('<Key-Return>',
                               self.print_contents)
         fred = Button(self, text="Test fred", fg="red", bg="blue", command = self.printcontent)
