@@ -30,6 +30,7 @@ K = int(FRAME_LENGTH*4/5)
 print "Number frame: ", NUMBER_FRAME
 print "Frame length:", FRAME_LENGTH
 print "Sample: ", samplerate
+print "Shape: ", data.shape
 
 def r_item(k, arr):
     total = 0
@@ -74,9 +75,11 @@ def sum_of_squares(xs):
     return total
 def fix_hamming(hamming, data):  #data_frame
     base_point = hamming[0]
-    index = float(np.amax(hamming)/np.amax(data));
+    start_at = int(len(data)*1/5)
+    data_len = int(len(data)*4/5)
+    index = float((np.amax(hamming)-base_point)/np.amax(data[start_at:data_len]))
     for i in xrange(0, len(hamming)):
-        hamming[i] = (hamming[i]-base_point)/index
+        hamming[i] = float((hamming[i]-base_point)/index)
     return hamming
 def fix_new_sig_frame(hamming, data):
     # print "length hamming: ", len(hamming)
@@ -100,6 +103,7 @@ for i in xrange(0,2*NUMBER_FRAME-1):
     # tmp = sum_of_squares(data[start_at:stop_at])
     tmp = np.sum(data[start_at:stop_at]**2)
     tmp = np.sqrt(abs(tmp))
+    print tmp
     if tmp >= 1.5:
         tmp = (i+1)*FRAME_LENGTH/(2*samplerate)
         array_time.append(tmp)
@@ -139,7 +143,7 @@ for i in xrange(0, NUMBER_FRAME_NEW-1):
     prev_point = int(prev_point/2) + start_at
     list_point.append(prev_point)
     print prev_point
-plt.plot(timeArray, data)
+# plt.plot(timeArray, data)
 print "length of new_sig", len(new_sig)
 print len(list_point)
 # plt.plot(new_sig)
@@ -152,9 +156,8 @@ for i in xrange(0, len(list_point)-1):
         start_at = 0
         stop_at = list_point[i+1]
         window = np.hamming(list_point[1])
-        fix_hamming(window, new_sig[start_at:stop_at])
+        window = fix_hamming(window, new_sig[start_at:stop_at])
         hamming_sig.extend(fix_new_sig_frame(window, new_sig[start_at:stop_at]))
-
     else:
         start_at = list_point[i-1]
         stop_at = list_point[i+1]
@@ -162,10 +165,14 @@ for i in xrange(0, len(list_point)-1):
         fix_hamming(window, new_sig[start_at:stop_at])
         fix_new_sig_frame(window, new_sig[start_at:stop_at])
         hamming_sig.extend(fix_new_sig_frame(window, new_sig[start_at:stop_at]))
+        # if i == 1: 
+        #     array_data = np.arange(list_point[0], list_point[2])
+        #     plt.plot(array_data,window)
 
 # plt.plot(window)
 scaled = np.int16(hamming_sig/np.max(np.abs(hamming_sig)) * 32767)
 write('test.wav', samplerate, scaled)
+plt.plot(timeArray, data)
 # plt.plot(hamming_sig)
 # plt.plot(new_sig)
 # plt.plot(list_f0, 'ro')

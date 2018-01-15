@@ -88,9 +88,9 @@ for i in xrange(0,2*NUMBER_FRAME-1):
         new_sig.extend(new_data)
         R = r_total(new_data)
         list_f0.append(f0(R))
-        if count == 1:
-            plt.plot(R)
-            break
+        # if count == 2:
+        #     plt.plot(R)
+        #     break
         # print start_at
         # print stop_at
         if status == 0:
@@ -106,8 +106,8 @@ for i in xrange(0,2*NUMBER_FRAME-1):
 # plt.plot(timeArray, data)
 # print "length of new_sig", len(new_sig)
 # plt.plot(new_sig)
-# plt.plot(list_f0, 'ro')
-# plt.ylim( (0, 250) )
-# plt.xlim( (0, 20) )
+plt.plot(list_f0, 'ro')
+plt.ylim( (0, 250) )
+plt.xlim( (0, 20) )
 
 plt.show()
