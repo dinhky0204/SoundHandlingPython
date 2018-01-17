@@ -1,3 +1,5 @@
+import fix_hamming as handling
+import f0_handling
 import matplotlib
 matplotlib.use('TkAgg')
 import numpy as np
@@ -12,65 +14,6 @@ from scipy.io.wavfile import write
 from pygame import mixer
 import wave
 
-class handling:
-    def sound_analy(self, filename, FRAME_DURATION):
-        samplerate, data = wavfile.read(filename)
-        fix_data = []
-        data = data / (2. ** 15)
-        FRAME_LENGTH = FRAME_DURATION * samplerate
-        NUMBER_FRAME = int(len(data) / FRAME_LENGTH)
-        TIME = (float)(len(data) / samplerate)
-        print "Frame length: ", FRAME_LENGTH
-        print "Number frame: ", NUMBER_FRAME
-        print "Length: ", len(data)
-        print "Samplerate: ", samplerate
-        if type(data[0]) is np.ndarray:
-            for i in xrange(0, (len(data)-1)):
-                fix_data.append(data[i][0])
-            return (FRAME_LENGTH, NUMBER_FRAME, fix_data, samplerate, FRAME_LENGTH)
-        else:    
-            return (FRAME_LENGTH, NUMBER_FRAME, data, samplerate, FRAME_LENGTH)
-
-    def sum_of_squares(self, xs):
-        sum_of_squares = 0
-        for i in xs:
-            squared = i * i
-            sum_of_squares += squared
-        return sum_of_squares
-
-    def min_of_square(self, arr):
-        min = 1
-        for i in arr:
-            i = abs(i)
-            if i == 0:
-                min = 0
-                break
-        return min
-    def fix_hamming(self, hamming, data):  #data_frame
-        base_point = hamming[0]
-        start_at = int(len(data)*1/10)
-        data_len = int(len(data)*9/10)
-        index = float((np.amax(hamming)-base_point)/np.amax(data[start_at:data_len]))
-        for i in xrange(0, len(hamming)):
-            hamming[i] = float((hamming[i]-base_point)/index)
-        return hamming
-    def fix_new_sig_frame(self, hamming, data):
-        # print "length hamming: ", len(hamming)
-        # print "length data: ", len(data)
-        for i in xrange(0, len(hamming)):
-            data[i] = hamming[i]*data[i]
-        start_at = int(len(data)/8)
-        stop_at = len(data)-start_at
-        return data[start_at:stop_at]
-    def extend_hamming_sig(self, hamming_sig, extend_data):
-        extend_space = int(len(extend_data)/5)
-        start_point = len(hamming_sig) - extend_space
-        for i in xrange(0, extend_space):
-            hamming_sig[i + start_point] += extend_data[i]
-        end_point = len(extend_data) -1
-        hamming_sig.extend(extend_data[extend_space : end_point])
-        # print len(hamming_sig)
-        return hamming_sig
 class mclass:
     def __init__(self,  window):
         self.window = window
@@ -81,6 +24,7 @@ class mclass:
         self.samplerate = 0
         self.frame_len = 0
         self.test_point = 0
+        self.energy = 0
         if not self.filename:
             print "Exit!"
             self.window.destroy()
@@ -93,11 +37,13 @@ class mclass:
             self.psola_hadling = Button(window, text="TD-PSOLA", bg = "#497e1e", fg="white", command=self.mul_hamming)
             self.play_sound = Button(window, text="PLAY", bg = "#497e1e", fg="white", command=self.play_sound)
             self.quit_btn = Button(window, text="QUIT", bg= "red", fg="black", command=self.window.quit)
+            self.show_f0 = Button(window, text="SHOW F0", bg = "#497e1e", fg="white", command=self.show_f0)
             self.box.pack()
             self.quit_btn.pack(side="bottom")
             self.button.pack()
             self.psola_hadling.pack()
             self.play_sound.pack()
+            self.show_f0.pack()
     def min_array(self, data):
         tmp = 1
         data = data.ravel()
@@ -105,6 +51,16 @@ class mclass:
             if i < tmp:
                 tmp = i
         return tmp  
+    def show_f0(self):
+        list_f0 = f0_handling.handling(self.filename, self.energy)
+        plt.plot(list_f0, 'ro')
+        list_f0_fix = f0_handling.handling('test.wav', 0)
+        plt.plot(list_f0_fix, 'ro')
+        plt.ylim( (0, 250) )
+        plt.xlim( (0, 20) )
+        plt.show()
+        print list_f0
+
     def play_sound(self):
         print "play"
         spf = wave.open("test.wav",'r')
@@ -129,7 +85,6 @@ class mclass:
             print prev_point
         return list_point
     def mul_hamming(self):
-        hd = handling()
         self.hamming_sig = []
         list_point = self.max_of_frame(self.new_sig)
         for i in xrange(0, len(list_point)-1):
@@ -137,8 +92,8 @@ class mclass:
                 start_at = 0
                 stop_at = list_point[i+1]
                 window = np.hamming(list_point[1])
-                window = hd.fix_hamming(window, self.new_sig[start_at:stop_at])
-                self.hamming_sig.extend(hd.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                window = handling.fix_hamming(window, self.new_sig[start_at:stop_at])
+                self.hamming_sig.extend(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
             else:
                 start_at = list_point[i-1]
                 stop_at = list_point[i+1]
@@ -146,9 +101,9 @@ class mclass:
                 # print "stop: ", list_point[i+1]
                 if list_point[i-1] != list_point[i+1]:
                     window = np.hamming(list_point[i+1]-list_point[i-1])
-                    hd.fix_hamming(window, self.new_sig[start_at:stop_at])
-                    hd.fix_new_sig_frame(window, self.new_sig[start_at:stop_at])
-                    self.hamming_sig = hd.extend_hamming_sig(self.hamming_sig, hd.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                    handling.fix_hamming(window, self.new_sig[start_at:stop_at])
+                    handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at])
+                    self.hamming_sig = handling.extend_hamming_sig(self.hamming_sig, handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
                     # self.hamming_sig.extend(hd.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
         # print self.hamming_sig[0:200]
         scaled = np.int16(self.hamming_sig/np.max(np.abs(self.hamming_sig)) * 32767)
@@ -161,12 +116,12 @@ class mclass:
     def plot (self):
         self.new_sig = []
         self.hamming_sig = []
+        self.energy = float(self.box.get())
         print "Nang luong ====>", self.box.get()
-        hd = handling()
         FRAME_DURATION = 0.04
         status = 1
         new_data = np.array([])
-        return_value_of_handling = hd.sound_analy(self.filename, FRAME_DURATION)
+        return_value_of_handling = handling.sound_analy(self.filename, FRAME_DURATION)
         FRAME_LENGTH = return_value_of_handling[0]
         NUMBER_FRAME = return_value_of_handling[1]
         data = return_value_of_handling[2]
@@ -184,7 +139,7 @@ class mclass:
             start_at = int(i * FRAME_LENGTH / 2)
             stop_at = int((i + 2) * FRAME_LENGTH / 2)
             # tmp = np.sum(data[start_at:stop_at]**2)
-            tmp = hd.sum_of_squares(data[start_at:stop_at])
+            tmp = handling.sum_of_squares(data[start_at:stop_at])
             tmp = np.sqrt(abs(tmp))
             # test = hd.min_of_square(data[start_at:stop_at])
             # tmp = 0.046

@@ -31,6 +31,19 @@ print "Number frame: ", NUMBER_FRAME
 print "Frame length:", FRAME_LENGTH
 print "Sample: ", samplerate
 print "Shape: ", data.shape
+if type(data[0]) is np.ndarray:
+    fix_data = []
+    for i in xrange(0, (len(data)-1)):
+        fix_data.append(data[i][0])
+    data = fix_data
+
+def sum_of_squares(xs):
+    total = 0
+    # total = np.array([1])
+    for i in xs:
+        squared = i * i
+        total += squared
+    return total
 
 def r_item(k, arr):
     total = 0
@@ -101,13 +114,15 @@ for i in xrange(0,2*NUMBER_FRAME-1):
     start_at = int(i * FRAME_LENGTH/2)
     stop_at = int((i + 2) * FRAME_LENGTH/2)
     # tmp = sum_of_squares(data[start_at:stop_at])
-    tmp = np.sum(data[start_at:stop_at]**2)
+    # tmp = np.sum(data[start_at:stop_at]**2)
+    tmp = sum_of_squares(data[start_at:stop_at])
     tmp = np.sqrt(abs(tmp))
     print tmp
-    if tmp >= 1.5:
+    if tmp >= 0.8:
         tmp = (i+1)*FRAME_LENGTH/(2*samplerate)
         array_time.append(tmp)
         count += 1
+        stop_at = stop_at - int(FRAME_LENGTH/2)
         new_data = data[start_at: stop_at]
         new_sig.extend(new_data)
         # R = r_total(new_data)
@@ -126,23 +141,33 @@ for i in xrange(0,2*NUMBER_FRAME-1):
             plt.plot([stop_at/samplerate, stop_at/samplerate], [-1, 1], color="blue")
             status = 0
             print "BLUE"
-test_data = new_sig[0:800]
+
+stop_at = int(samplerate/80)
+start_at = int(samplerate/450)
+print "start: ", start_at
+print "stop: ", stop_at
+test_data = new_sig[start_at:stop_at]
 print "length of new_data", len(new_data)
-prev_point = np.argmax(test_data)
-prev_point = int(prev_point/2)
+prev_point = np.argmax(test_data) + start_at
+# prev_point = int(prev_point/2)
 list_point.append(prev_point)
 print prev_point
-NUMBER_FRAME_NEW = int(len(new_sig)/400)
-for i in xrange(0, NUMBER_FRAME_NEW-1):
-    stop_at = prev_point + 100
-    test_data = new_sig[prev_point:stop_at]
-    start_at = int(np.argmin(test_data)/2) + prev_point
-    print "Min_point: ", start_at
-    stop_at = start_at + 500
-    prev_point = np.argmax(new_sig[start_at:stop_at]) 
-    prev_point = int(prev_point/2) + start_at
+NUMBER_FRAME_NEW = int(len(new_sig)/450)
+# for i in xrange(0, NUMBER_FRAME_NEW-1):
+while stop_at < len(new_sig):
+    start_at = prev_point + int(samplerate/450)
+    print "start: ", start_at
+    stop_at = prev_point + int(samplerate/80)
+    print "stop: ", stop_at
+    test_data = new_sig[start_at:stop_at]
+    # start_at = int(np.argmin(test_data)/2) + prev_point
+    # print "Min_point: ", start_at
+    # stop_at = start_at + 500
+    # prev_point = np.argmax(new_sig[start_at:stop_at]) 
+    # prev_point = int(prev_point/2) + start_at
+    prev_point = np.argmax(test_data) + start_at
     list_point.append(prev_point)
-    print prev_point
+    print "max point", prev_point
 # plt.plot(timeArray, data)
 print "length of new_sig", len(new_sig)
 print len(list_point)
@@ -162,9 +187,10 @@ for i in xrange(0, len(list_point)-1):
         start_at = list_point[i-1]
         stop_at = list_point[i+1]
         window = np.hamming(list_point[i+1]-list_point[i-1])
-        fix_hamming(window, new_sig[start_at:stop_at])
-        fix_new_sig_frame(window, new_sig[start_at:stop_at])
-        hamming_sig.extend(fix_new_sig_frame(window, new_sig[start_at:stop_at]))
+        if start_at != stop_at:
+            fix_hamming(window, new_sig[start_at:stop_at])
+            fix_new_sig_frame(window, new_sig[start_at:stop_at])
+            hamming_sig.extend(fix_new_sig_frame(window, new_sig[start_at:stop_at]))
         # if i == 1: 
         #     array_data = np.arange(list_point[0], list_point[2])
         #     plt.plot(array_data,window)
@@ -172,9 +198,10 @@ for i in xrange(0, len(list_point)-1):
 # plt.plot(window)
 scaled = np.int16(hamming_sig/np.max(np.abs(hamming_sig)) * 32767)
 write('test.wav', samplerate, scaled)
-plt.plot(timeArray, data)
+# plt.plot(data)
 # plt.plot(hamming_sig)
-# plt.plot(new_sig)
+plt.plot(new_sig)
+
 # plt.plot(list_f0, 'ro')
 # plt.plot(new_sig)
 # plt.ylim( (-1, 1) )

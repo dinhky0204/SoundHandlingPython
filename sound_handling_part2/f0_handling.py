@@ -10,6 +10,8 @@ from scipy.io import wavfile
 import Tkinter, Tkconstants, tkFileDialog
 import math
 
+def f0_handling:
+    
 FRAME_DURATION = 0.04
 list_f0 = []
 new_sig = []
@@ -81,7 +83,7 @@ def sum_of_squares(xs):
         total += squared
     return total
 count = 0
-array_time = []
+
 for i in xrange(0,2*NUMBER_FRAME-1):
     tmp = 0
     R = []
@@ -114,12 +116,3 @@ for i in xrange(0,2*NUMBER_FRAME-1):
             status = 0
             print "BLUE"
             status = 0
-
-# plt.plot(timeArray, data)
-# print "length of new_sig", len(new_sig)
-# plt.plot(new_sig)
-plt.plot(list_f0, 'ro')
-plt.ylim( (0, 250) )
-plt.xlim( (0, 20) )
-
-plt.show()
