@@ -1,5 +1,6 @@
 import fix_hamming as handling
 import f0_handling
+import fix_f0 
 import matplotlib
 matplotlib.use('TkAgg')
 import numpy as np
@@ -25,6 +26,8 @@ class mclass:
         self.frame_len = 0
         self.test_point = 0
         self.energy = 0
+        self.number_frame = 0
+        self.f0 = 110
         if not self.filename:
             print "Exit!"
             self.window.destroy()
@@ -38,11 +41,13 @@ class mclass:
             self.play_sound = Button(window, text="PLAY", bg = "#497e1e", fg="white", command=self.play_sound)
             self.quit_btn = Button(window, text="QUIT", bg= "red", fg="black", command=self.window.quit)
             self.show_f0 = Button(window, text="SHOW F0", bg = "#497e1e", fg="white", command=self.show_f0)
+            self.show_new_sig = Button(window, text="Dau huyen", bg = "#497e1e", fg="white", command=self.thanh_huyen)
             self.box.pack()
             self.quit_btn.pack(side="bottom")
             self.button.pack()
             self.psola_hadling.pack()
             self.play_sound.pack()
+            self.show_new_sig.pack()
             self.show_f0.pack()
     def min_array(self, data):
         tmp = 1
@@ -110,8 +115,52 @@ class mclass:
         write('test.wav', self.samplerate, scaled)
         plt.plot(self.hamming_sig)
         plt.show()
-    def plot_new_sig(self):
-        plt.plot(self.new_sig)
+    def thanh_huyen(self):
+        sig_thanh_huyen = []
+        start_at = 0
+        stop_at = 0
+        space_extend = []
+        number_sample_prev_frame = 0
+        new_f0 = np.arange(110, 85, -0.1)
+        max_points = self.max_of_frame(self.new_sig)
+        space_extend = fix_f0.extend_space(new_f0, max_points, self.samplerate)
+        print "len of maxpoint: ", len(max_points)
+        for i in xrange(0, len(max_points)):
+            if i == 0:
+                start_at = 0
+                stop_at = int((max_points[i+1] + max_points[i])/2)
+                window = np.hamming(stop_at+1)
+                window = handling.fix_hamming(window, self.new_sig[start_at:stop_at])
+                sig_thanh_huyen.extend(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                number_sample_prev_frame = len(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                # sig_thanh_huyen.extend(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+            elif i == (len(max_points)-1):
+                if max_points[i-1] != max_points[i]:
+                    start_at = int((max_points[i]+max_points[i-1])/2)
+                    stop_at = len(self.new_sig) - 1
+                    window = np.hamming((stop_at-start_at+1))
+                    window = handling.fix_hamming(window, self.new_sig[start_at:stop_at])
+                    sig_thanh_huyen.extend(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                    
+            else:
+                print space_extend[i]
+                start_at = max_points[i-1]
+                stop_at = max_points[i+1]
+                if max_points[i-1] != max_points[i+1]:
+                    window = np.hamming(max_points[i+1]-max_points[i-1])
+                    handling.fix_hamming(window, self.new_sig[start_at:stop_at])
+                    handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at])
+                    number_sample_prev_frame = len(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                    sig_thanh_huyen = fix_f0.ghep_frame_thanh_huyen(space_extend[i], sig_thanh_huyen, handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]), number_sample_prev_frame)
+                    # sig_thanh_huyen.extend(handling.fix_new_sig_frame(window, self.new_sig[start_at:stop_at]))
+                
+        # plt.plot(self.new_sig)
+        scaled = np.int16(sig_thanh_huyen/np.max(np.abs(sig_thanh_huyen)) * 32767)
+        write('test1.wav', self.samplerate, scaled)
+        plt.plot(sig_thanh_huyen)
+        # plt.plot(test_data)
+        # plt.plot(list_f0)
+        # plt.ylim(0, 150)
         plt.show()
     def plot (self):
         self.new_sig = []
@@ -124,6 +173,7 @@ class mclass:
         return_value_of_handling = handling.sound_analy(self.filename, FRAME_DURATION)
         FRAME_LENGTH = return_value_of_handling[0]
         NUMBER_FRAME = return_value_of_handling[1]
+        self.number_frame = NUMBER_FRAME
         data = return_value_of_handling[2]
         self.samplerate = return_value_of_handling[3]
         self.frame_len = return_value_of_handling[4]

@@ -56,10 +56,12 @@ def fix_hamming(hamming, data):  #data_frame
 def fix_new_sig_frame(hamming, data):
     # print "length hamming: ", len(hamming)
     # print "length data: ", len(data)
-    for i in xrange(0, len(hamming)):
+
+    for i in xrange(0, len(hamming)-1):
         data[i] = hamming[i]*data[i]
     start_at = int(len(data)/8)
     stop_at = len(data)-start_at
+
     return data[start_at:stop_at]
 def extend_hamming_sig(hamming_sig, extend_data):
     extend_space = int(len(extend_data)/8)
